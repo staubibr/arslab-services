@@ -31,21 +31,21 @@ public class FilesMap extends HashMap<String, BufferedInputStream>{
 		}
 	}
 	
-	public String FindKey(String ext) {
+	public String FindKey(String text) {
 		return this.keySet().stream()
-				   			.filter(k -> k.toLowerCase().contains(ext.toLowerCase()))
+				   			.filter(k -> k.toLowerCase().contains(text.toLowerCase()))
 							.findFirst()
 							.orElse(null);
 	}
 	
-	public String FindName(String ext) {
-		String key = FindKey(ext);
+	public String FindName(String text) {
+		String key = FindKey(text);
 		
 		return (key == null) ? null : key.substring(0, key.indexOf("."));
 	}
 	
-	public BufferedInputStream FindByExt(String ext) {
-		String key = FindKey(ext);
+	public BufferedInputStream FindStream(String text) {
+		String key = FindKey(text);
 		
 		return (key == null) ? null : this.get(key);
 	}

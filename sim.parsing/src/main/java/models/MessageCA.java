@@ -1,5 +1,6 @@
 package models;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,6 +21,12 @@ public class MessageCA extends Message {
         return coord;
     }
     
+    public MessageCA(String time, String model, int[] coord, String port, String[] value) {
+        super(time, model, port, value);
+        
+        this.coord = coord;
+    }
+    
     public MessageCA(String time, String model, int[] coord, String port, String value) {
         super(time, model, port, value);
         
@@ -31,16 +38,17 @@ public class MessageCA extends Message {
     }
 
     public List<String> toArray(Structure structure) {
-        String[] result = new String[5];
+        List<String> result = new ArrayList<String>();
         
         int iP = structure.getPortIndexByMessage(this);
-        				  
-        result[0] = String.valueOf(this.coord[0]);
-        result[1] = String.valueOf(this.coord[1]);
-        result[2] = String.valueOf(this.coord[2]);
-        result[3] = String.valueOf(iP);
-        result[4] = this.value;
+        	  
+        result.add(String.valueOf(this.coord[0]));
+        result.add(String.valueOf(this.coord[1]));
+        result.add(String.valueOf(this.coord[2]));
+        result.add(String.valueOf(iP));
+        
+        Arrays.stream(this.value).forEach(v -> result.add(v));
 
-        return Arrays.asList(result);
+        return result;
     }
 }

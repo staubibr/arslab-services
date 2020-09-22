@@ -21,17 +21,16 @@ import parsers.shared.Ma;
 public class CellDevs implements IParser {
 
 	private static final String TEMPLATE = "{\"value\":${0}}";
-	private static List<MessageCA> messages;
 		
 	public Parsed Parse(FilesMap files)  throws IOException {
 		String name = files.FindName(".ma");
-		Structure structure = (new Ma()).ParseCA(files.FindByExt(".ma"), TEMPLATE);
+		Structure structure = (new Ma()).ParseCA(files.FindStream(".ma"), TEMPLATE);
 				
 		FixStructure(structure);
 				
 		structure.setInfo(new StructureInfo(name, "Lopez", "Cell-DEVS"));
 		
-		messages = ParseLog(structure, files.FindByExt(".log"));
+		List<MessageCA> messages = ParseLog(structure, files.FindStream(".log"));
 		
 		return new Parsed(name, structure, messages);
 	}
@@ -47,7 +46,7 @@ public class CellDevs implements IParser {
 	}
 	
 	private static List<MessageCA> ParseLog(Structure structure, InputStream log) throws IOException {				
-		messages = new ArrayList<MessageCA>();
+		List<MessageCA> messages = new ArrayList<MessageCA>();
 		
 		Helper.ReadFile(log, (String l) -> {
 			// 0 / L / Y / 00:00:00:000:0 / region(0,0)(02) / out_scenario4 /      0.00000 / region(01)
@@ -81,5 +80,17 @@ public class CellDevs implements IParser {
 		});
 		
 		return messages;
+	}
+	
+	public static Boolean Validate(FilesMap files) throws IOException {
+		String ma = files.FindKey(".ma");
+		InputStream log = files.get(files.FindKey(".log"));
+
+		if (ma == null || log == null) return false;
+
+		List<String> lines = Helper.ReadNLines(log, 1);
+
+		// 0 / L / Y is the Lopez format, as far as I know, Lopez only does Cell-DEVS
+		return (lines.get(0).contains("0 / L / "));
 	}
 }
