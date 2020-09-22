@@ -1,0 +1,15 @@
+.metadata
+/sim.parsing/.classpath
+/sim.parsing/.project
+/sim.parsing/.settings/org.eclipse.jdt.core.prefs
+/sim.parsing/.settings/org.eclipse.m2e.core.prefs
+/sim.services/.classpath
+/sim.services/.project
+/sim.services/.settings/org.eclipse.core.resources.prefs
+/sim.services/.settings/org.eclipse.jdt.core.prefs
+/sim.services/.settings/org.eclipse.m2e.core.prefs
+/sim.rise.ext/.classpath
+/sim.rise.ext/.project
+/sim.rise.ext/.settings/org.eclipse.core.resources.prefs
+/sim.rise.ext/.settings/org.eclipse.jdt.core.prefs
+/sim.rise.ext/.settings/org.eclipse.m2e.core.prefs
