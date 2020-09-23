@@ -25,6 +25,10 @@ public class ModelCA extends Model {
         return initialRowValues;
     }
 
+	public String getType() {
+		return "coupled" ;
+	}
+
     public int[] getSize() {
         return size;
     }

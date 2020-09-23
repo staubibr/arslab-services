@@ -1,6 +1,7 @@
 package models;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,7 +13,7 @@ public class Message implements Serializable {
 	public String time;
 	public String model;
 	public String port;
-	public String value;
+	public String[] value;
 
     public String getTime() {
         return time;
@@ -26,15 +27,19 @@ public class Message implements Serializable {
         return port;
     }
 
-    public String getValue() {
+    public String[] getValue() {
         return value;
     }
     
-    public Message(String time, String model, String port, String value) {
+    public Message(String time, String model, String port, String[] value) {
         this.time = time;
         this.model = model;
         this.port = port;
         this.value = value;
+    }
+    
+    public Message(String time, String model, String port, String value) {
+    	this(time, model, port, new String[] { value });
     }
     
     public Message() {
@@ -42,14 +47,15 @@ public class Message implements Serializable {
     }
     
     public List<String> toArray(Structure structure) {
-        String[] result = new String[2];
-        
+    	List<String> result = new ArrayList<String>();
+    	        
         int iP = structure.getPortIndexByMessage(this);
         
-        result[0] = String.valueOf(iP);
-        result[1] = this.value;
+        result.add(String.valueOf(iP));
         
-        return Arrays.asList(result);
+        Arrays.stream(this.value).forEach(v -> result.add(v));
+        
+        return result;
     }
     
     public String toString(Structure structure, CharSequence delimiter) {

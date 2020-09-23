@@ -22,21 +22,20 @@ import parsers.shared.Ma;
 public class Devs implements IParser {
 
 	private static final String TEMPLATE = "{\"value\":${0}}";
-	private static List<Message> messages;
 		
 	public Parsed Parse(FilesMap files)  throws IOException {
 		String name = files.FindName(".ma");
-		Structure structure = (new Ma()).Parse(files.FindByExt(".ma"), TEMPLATE);
+		Structure structure = (new Ma()).Parse(files.FindStream(".ma"), TEMPLATE);
 		
 		structure.setInfo(new StructureInfo(name, "CDpp", "DEVS"));
 		
-		messages = ParseLog(structure, files.FindByExt("log"));
+		List<Message> messages = ParseLog(structure, files.FindStream("log"));
 				
 		return new Parsed(name, structure, messages);
 	}
 		
 	private static List<Message> ParseLog(Structure structure, InputStream log) throws IOException {
-		messages = new ArrayList<Message>();
+		List<Message> messages = new ArrayList<Message>();
 		
 		List<Model> coupled = structure.getNodes().stream().filter(md -> md.getType().equals("coupled")).collect(Collectors.toList());
 		
@@ -68,5 +67,21 @@ public class Devs implements IParser {
 		});
 		
 		return messages;
+	}
+	
+	public static Boolean Validate(FilesMap files) throws IOException {
+		String ma = files.FindKey(".ma");
+		InputStream log = files.get(files.FindKey(".log"));
+
+		if (ma == null || log == null) return false;
+
+		List<String> lines = Helper.ReadNLines(log, 3);
+
+		if (!lines.get(0).contains("Mensaje")) return false;
+		
+		long n1 = lines.get(2).chars().filter(c -> c == '(').count();
+		long n2 = lines.get(2).chars().filter(c -> c == ')').count();
+		
+		return n1 == 2 && n2 == 2;
 	}
 }
