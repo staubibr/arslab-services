@@ -64,7 +64,7 @@ public class Palette {
 		if (ranges.size() != colors.size()) throw new RuntimeException("Ranges and colors length must match in palette type B.");
 
 		// populate grid palette object
-		for (var i = 0; i < ranges.size(); i++) {
+		for (int i = 0; i < ranges.size(); i++) {
 			palette.add(new PaletteBucket(ranges.get(i)[0], ranges.get(i)[1], new int[] { colors.get(i)[0], colors.get(i)[1], colors.get(i)[2] }));			
 		}
 
