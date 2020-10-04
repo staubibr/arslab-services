@@ -1,6 +1,7 @@
 package services;
 
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -39,6 +40,7 @@ import components.FilesMap;
 import components.Utilities;
 import models.Parsed;
 import parsers.IParser;
+import parsers.auto.Auto;
 import util.ConnectionFactory;
 import util.DbUtil;
 
@@ -264,32 +266,33 @@ public class ResultsService {
 		// InputStream debug = getDebugResults(username,  servicetype,  framework);
 		 InputStream result = getSimResults(username,  servicetype,  framework);
 		 ZipInputStream result_stream = null;
-	
-		try {
+		 FilesMap map = new FilesMap();
+		 try {
+				result_stream =  new ZipInputStream(result);
+				ZipEntry zipEntry1 = null;
+				
+				
+				while ((zipEntry1 = result_stream.getNextEntry()) != null) {
+					
+					if (zipEntry1.isDirectory()) continue;
+					
+					BufferedInputStream bStream = new BufferedInputStream(result_stream);
+					String[] parts = zipEntry1.getName().split("/");
+					//System.out.println(bStream.readAllBytes().length );
+					map.put(parts[1], bStream);
 		
-		  result_stream =  new ZipInputStream(result);
-	
- 	        ZipEntry zipEntry1 = null;
- 	       while ((zipEntry1 = result_stream.getNextEntry()) != null) {
- 	    	  String fileName = zipEntry1.getName();
- 	    	 System.out.println(zipEntry1.getSize());
- 	    	    File newFile = new File(fileName);
-	    	    if (zipEntry1.isDirectory()) {
- 	    	   // 	System.out.println("isDirectory  " + newFile);
- 	    	        newFile.mkdirs();
- 	    	    } else {
- 	    	    	
- 	    	    	simFiles.add( newFile);
- 	    	    }
- 	            
- 	       }
- 	      result_stream.close();
- 	     
- 	        
-	} catch (IOException ec) {
-        System.out.println("Error while extract the zip: "+ec);
-    }
-	
+				}
+			
+				
+		
+			} 
+		
+			catch (IOException ec) {
+		        System.out.println("Error while extract the zip: "+ec);
+		    }
+
+			
+		
 		 ResultSet dbresults = null;
 	        try {
 	        	
@@ -316,51 +319,29 @@ public class ResultsService {
 	            	      
 	            	        ZipEntry zipEntry = null;
 	            	        while ((zipEntry = zi.getNextEntry()) != null) {
-	            	        	 String fileName = zipEntry.getName();
-	            	 	    	    File inputFile = new File(  File.separator + fileName);
-
-	            	 	    	    if (zipEntry.isDirectory()) {
-	            	 	    	    	System.out.println("isDirectory  " + inputFile);
-	            	 	    	    
-	            	 	    	    } else {
-	            	 	    	    	
-	            	 	    	    	simFiles.add( inputFile);
-	            	 	    	    }
-	             	        
-	            	        }
-	            	        zi.close();
-	             	        
+	        					
+	        					if (zipEntry.isDirectory()) continue;
+	        					
+	        					BufferedInputStream bStream = new BufferedInputStream(zi);
+	        					String[] parts2 = zipEntry.getName().split("/");
+	        					
+	        					map.put(parts2[1], bStream);
+	 	
+	        				}  
 		   	            	  
 	            	    } 
 	            	    catch (IOException e) {
 	            	        System.out.println("Error while extract the zip: "+e);
 	            	    }
-	            	    finally {
-	            	        if (zi != null) {
-	            	            zi.close();
-	            	        }
-	            	    } 
-	            	    for(int i = 0; i < simFiles.size(); i++) 
-	                	{ 
-//         	 	    	   FileInputStream fileStream = new FileInputStream(simFiles.get(i));
-//        	 	    	    MultipartFile multipartFile = new MockMultipartFile( simFiles.get(i).getName(), fileStream);
-//        	 	    	   
-//        	 	    	    
-//	            	    	simMultipartFiles.add( multipartFile);
-//	                		System.out.println(simMultipartFiles.get(i)); 
-	                		System.out.println(simFiles.get(i)); 
-	                	} 
-	            //	    postFiles( simFiles);
-	            	    
-//	            	System.out.println( dbresults.getInt(1) );
-//		            System.out.println( dbresults.getString(2) );
-//           		System.out.println( dbresults.getString(3) );
-//	            	System.out.println( dbresults.getString(4) );
-//	            	System.out.println( dbresults.getString(5)  );
-//
-//	            	System.out.println( dbresults.getString(7) );
-//	            	System.out.println( dbresults.getString(8) );
-//	            	System.out.println( dbresults.getString(9) );
+//	    				InputStream log = map.get(map.FindKey(".ma"));
+//	    				System.out.println(log.readAllBytes().length );		
+	            		IParser parser = new Auto();
+	        			
+	        			Parsed results = parser.Parse(map);
+	        			result_stream.close();
+	        			zi.close(); 
+	        			System.out.println(map);  
+
 	            }
 	            
 	        } catch (SQLException e) {

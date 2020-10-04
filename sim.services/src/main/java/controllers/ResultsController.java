@@ -1,6 +1,7 @@
 package controllers;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -65,7 +66,7 @@ public class ResultsController {
 	@GetMapping(path = "/workspaces/{username}/{servicetype}/{framework}/getAllInfo")
 
 	public String getAllInfo(@PathVariable String username, @PathVariable String servicetype,
-			@PathVariable String framework) throws IOException {
+			@PathVariable String framework) throws IOException, SQLException {
 		ResultsService service = new ResultsService();
 		String x = service.getAllInfo(username, servicetype, framework);
 		return x;

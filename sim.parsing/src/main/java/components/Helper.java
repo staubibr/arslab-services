@@ -38,7 +38,7 @@ public class Helper {
 	public static List<String> ReadNLines(InputStream file, int n) throws IOException {
 		Reader reader = new InputStreamReader(file);
 		BufferedReader br = new BufferedReader(reader);
-		
+
 		List<String> lines = new ArrayList<String>();
 		
 		for (int i = 0; i < n; i++) {
