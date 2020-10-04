@@ -70,7 +70,7 @@ public class CellDevs implements IParser {
 			c[0] = Integer.parseInt(tmp2[0]);
 			c[1] = Integer.parseInt(tmp2[1]);
 			c[2] = (tmp2.length == 2) ? 0 : Integer.parseInt(tmp2[2]);
-			
+	
 			// Magic
 			BigDecimal number = new BigDecimal(v);  
 			

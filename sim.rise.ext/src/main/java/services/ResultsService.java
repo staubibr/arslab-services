@@ -260,36 +260,44 @@ public class ResultsService {
 	}
 
 	public String getAllInfo(String username, String servicetype, String framework) throws IOException {
-		List<File> simFiles = new ArrayList<>(); 
-		List<MultipartFile> simMultipartFiles = new ArrayList<>(); 
+		List<String> filenames = new ArrayList<>(); 
+		List<BufferedInputStream> buffstream = new ArrayList<>(); 
 		Connection connection = ConnectionFactory.getConnection();
+		byte buff[] = new byte[10000];
+
 		// InputStream debug = getDebugResults(username,  servicetype,  framework);
 		 InputStream result = getSimResults(username,  servicetype,  framework);
 		 ZipInputStream result_stream = null;
 		 FilesMap map = new FilesMap();
 		 try {
-				result_stream =  new ZipInputStream(result);
-				ZipEntry zipEntry1 = null;
+			 result_stream = new ZipInputStream(result);
+				ZipEntry entry = null;
+
 				
-				
-				while ((zipEntry1 = result_stream.getNextEntry()) != null) {
+				while ((entry = result_stream.getNextEntry()) != null) {
+					if (entry.isDirectory()) continue;
 					
-					if (zipEntry1.isDirectory()) continue;
-					
-					BufferedInputStream bStream = new BufferedInputStream(result_stream);
-					String[] parts = zipEntry1.getName().split("/");
-					//System.out.println(bStream.readAllBytes().length );
-					map.put(parts[1], bStream);
-		
+			        int size = (int)entry.getSize();
+			        
+			        byte[] bytes = new byte[size];
+			        
+			        int read = 0;
+			        
+			        while (read < size) read += result_stream.read(bytes, read, (size - read));
+			        
+			        InputStream bis = new ByteArrayInputStream(bytes);
+			        BufferedInputStream is = new BufferedInputStream(bis);
+			        String[] parts = entry.getName().split("/");
+			        map.put(parts[1], is);
 				}
-			
 				
-		
+				result_stream.close();	
+				
 			} 
-		
-			catch (IOException ec) {
+		 catch (IOException ec) {
 		        System.out.println("Error while extract the zip: "+ec);
 		    }
+
 
 			
 		
@@ -318,29 +326,39 @@ public class ResultsService {
 	            	        zi = new ZipInputStream(new ByteArrayInputStream(dbresults.getBytes(6)));
 	            	      
 	            	        ZipEntry zipEntry = null;
-	            	        while ((zipEntry = zi.getNextEntry()) != null) {
-	        					
+	          
+	        				
+	        				while ((zipEntry = zi.getNextEntry()) != null) {
 	        					if (zipEntry.isDirectory()) continue;
 	        					
-	        					BufferedInputStream bStream = new BufferedInputStream(zi);
-	        					String[] parts2 = zipEntry.getName().split("/");
-	        					
-	        					map.put(parts2[1], bStream);
+	        			        int size = (int)zipEntry.getSize();
+	        			        
+	        			        byte[] bytes = new byte[size];
+	        			        
+	        			        int read = 0;
+	        			        
+	        			        while (read < size) read += zi.read(bytes, read, (size - read));
+	        			        
+	        			        InputStream bis = new ByteArrayInputStream(bytes);
+	        			        BufferedInputStream is = new BufferedInputStream(bis);
+	        			        String[] parts2 = zipEntry.getName().split("/");
+	        			        map.put(parts2[1], is);
 	 	
-	        				}  
+	        				} 
+	        				zi.close(); 
 		   	            	  
 	            	    } 
 	            	    catch (IOException e) {
 	            	        System.out.println("Error while extract the zip: "+e);
 	            	    }
-//	    				InputStream log = map.get(map.FindKey(".ma"));
-//	    				System.out.println(log.readAllBytes().length );		
-	            		IParser parser = new Auto();
-	        			
-	        			Parsed results = parser.Parse(map);
-	        			result_stream.close();
-	        			zi.close(); 
-	        			System.out.println(map);  
+//	            	    InputStream log = map.get(map.FindKey(".log"));
+//	    				System.out.println(log.readAllBytes().length );	
+//	    				System.out.println(map);  
+	            	    IParser parser = new Auto();
+	    				
+	    				Parsed results = parser.Parse(map);
+	    				
+	        		
 
 	            }
 	            
