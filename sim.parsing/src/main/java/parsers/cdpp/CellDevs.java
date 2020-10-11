@@ -9,48 +9,51 @@ import java.util.List;
 
 import components.FilesMap;
 import components.Helper;
-import models.MessageCA;
-import models.ModelCA;
-import models.Parsed;
-import models.Port;
-import models.Structure;
-import models.StructureInfo;
-import parsers.IParser;
+import models.simulation.MessageCA;
+import models.simulation.Port;
+import models.simulation.Structure;
+import models.simulation.StructureInfo;
+import parsers.ILogParser;
 import parsers.shared.Ma;
 import parsers.shared.Val;
 
-public class CellDevs implements IParser {
+public class CellDevs implements ILogParser {
 
 	private static final String TEMPLATE = "{\"value\":${0}}";
 
 	@Override
-	public Parsed Parse(FilesMap files) throws IOException {
-		String name = files.FindName(".ma");
-		Structure structure = (new Ma()).ParseCA(files.FindStream(".ma"), TEMPLATE);
-
-		structure.setInfo(new StructureInfo(name, "CDpp", "Cell-DEVS"));
+	public Structure Parse(FilesMap files) throws IOException {
+		Ma maParser = new Ma();
+		
+		Structure structure = maParser.ParseCA(files.FindStream(".ma"), TEMPLATE);
+		
+		structure.setInfo(new StructureInfo(files.FindName(".ma"), "CDpp", "Cell-DEVS"));
 
 		FixStructure(structure);
 		
-		List<MessageCA> messages = ParseLog(structure, files.FindStream(".val"), files.FindStream(".log"));
+		ParseLog(structure, files.FindStream(".val"), files.FindStream(".log"));
 				
-		return new Parsed(name, structure, messages);
+		return structure;
 	}
 	
 	private static void FixStructure(Structure structure) {
 		structure.getNodes().forEach(m -> {
-			structure.getPorts().add(new Port(m.name, "out", "output", TEMPLATE));
+			structure.CreatePort(m, "out", Port.Type.OUTPUT, TEMPLATE);
 		});
 	}
 	
-	private List<MessageCA> ParseLog(Structure structure, InputStream val, InputStream log) throws IOException {	
+	private void ParseLog(Structure structure, InputStream val, InputStream log) throws IOException {	
 		// TODO: Do CDpp models always have a single model?	
-		ModelCA main = (ModelCA)structure.getNodes().get(0);
+		Port port0 = structure.FindPort(structure.getNodes().get(0), "out");
 		
 		// Merge all possible 00:000 frame messages (val > rows > global)
-		List<MessageCA> initial = Helper.MergeFrames(main.GlobalFrame(), main.RowFrame());
+		List<MessageCA> initial = structure.MergeFrames(structure.GlobalFrame(port0), structure.RowFrame(port0));
 		
-		if (val != null) initial = Helper.MergeFrames(initial, (new Val()).Parse(val, main));
+		Val valParser = new Val();
+		
+		if (val != null) initial = structure.MergeFrames(initial, valParser.Parse(val, port0));
+		
+		structure.getTimesteps().add("00:00:00:000");
 		
 		List<MessageCA> messages = new ArrayList<MessageCA>();
 		
@@ -67,12 +70,14 @@ public class CellDevs implements IParser {
 			String[] tmp2 = tmp1[1].substring(0, tmp1[1].length() - 1).split(",");
 			
 			String t = split[1]; 														// time
-			String m = tmp1[0];															// model name;					
-			String p = split[3];														// port
+			// String m = tmp1[0];														// model name;					
+			// String p = split[3];														// port
 			String v = split[4].split("\\s+")[0];
 			
 			int[] c = new int[3];
 
+			if (tmp2.length < 2) return; 
+			
 			c[0] = Integer.parseInt(tmp2[0]);
 			c[1] = Integer.parseInt(tmp2[1]);
 			c[2] = (tmp2.length == 2) ? 0 : Integer.parseInt(tmp2[2]);
@@ -81,30 +86,33 @@ public class CellDevs implements IParser {
 			BigDecimal number = new BigDecimal(v);  
 			
 			v = number.stripTrailingZeros().toPlainString();
-						
-			messages.add(new MessageCA(t, m, c, p, v));
+			
+			if (!structure.getTimesteps().contains(t)) structure.getTimesteps().add(t);
+
+			// Is it always on the same port for Cell-DEVS?
+			// Port port = structure.FindPort(m, p);
+			
+			messages.add(new MessageCA(structure.getTimesteps().size() - 1, port0, c, v));
 		});
 		
 		initial.addAll(messages);
 		
-		return initial;
+		structure.setMessages(initial);
 	}
 	
-	public static Boolean Validate(FilesMap files) throws IOException {
-		String ma = files.FindKey(".ma");
+	public Boolean Validate(FilesMap files) throws IOException {
+		InputStream ma = files.get(files.FindKey(".ma"));
 		InputStream log = files.get(files.FindKey(".log"));
-
+		
 		if (ma == null || log == null) return false;
 
-		List<String> lines = Helper.ReadNLines(log, 3);
-
-		if (!lines.get(0).contains("Mensaje")) return false;
-
-		long n1 = lines.get(2).chars().filter(c -> c == '(').count();
-		long n2 = lines.get(2).chars().filter(c -> c == ')').count();
+		List<String> lines = Helper.ReadNLines(ma, 10);
 		
-		// A cell devs message will have one more set of parentheses than a DEVS message because of the coordinates
-		// TODO: This is very shifty but simple, and works.
-		return n1 == 3 && n2 == 3;
+		ma.reset();
+		
+		long count = lines.stream().filter((String l) -> l.contains("type") && l.contains("cell"))
+									.count();
+	    
+	    return count > 0;
 	}
 }

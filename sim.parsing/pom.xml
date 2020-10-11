@@ -3,7 +3,13 @@
 	 <groupId>sim.parsing</groupId>
 	 <artifactId>sim.parsing</artifactId>
 	 <version>0.0.1-SNAPSHOT</version>
-	 
+	<packaging>jar</packaging>
+	
+	<properties>
+    	<maven.compiler.source>1.8</maven.compiler.source>
+    	<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>
+
 	<dependencies>
 		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations -->
 		<dependency>

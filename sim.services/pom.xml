@@ -4,7 +4,17 @@
 	<artifactId>sim.services</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>war</packaging>
-  
+	
+	<build>
+    	<finalName>sim.services</finalName>
+	</build>
+
+	<properties>
+    	<maven.compiler.source>1.8</maven.compiler.source>
+    	<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>
+	
+    
 	<parent> 		
 		<groupId>org.springframework.boot</groupId> 		
 		<artifactId>spring-boot-starter-parent</artifactId> 		
@@ -41,6 +51,7 @@
 			<artifactId>sim.parsing</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		
 		<dependency>
 			<groupId>sim.rise.ext</groupId>
 			<artifactId>sim.rise.ext</artifactId>

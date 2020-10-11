@@ -6,39 +6,36 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import components.FilesMap;
 import components.Helper;
-import models.Message;
-import models.Model;
-import models.Parsed;
-import models.Structure;
-import models.StructureInfo;
-import parsers.IParser;
+import models.simulation.Message;
+import models.simulation.Model;
+import models.simulation.Port;
+import models.simulation.Structure;
+import models.simulation.StructureInfo;
+import parsers.ILogParser;
 import parsers.shared.Ma;
 
-public class Devs implements IParser {
+public class Devs implements ILogParser {
 
 	private static final String TEMPLATE = "{\"value\":${0}}";
 		
-	public Parsed Parse(FilesMap files)  throws IOException {
-		String name = files.FindName(".ma");
-		Structure structure = (new Ma()).Parse(files.FindStream(".ma"), TEMPLATE);
+	public Structure Parse(FilesMap files)  throws IOException {
+		Ma maParser = new Ma();
 		
-		structure.setInfo(new StructureInfo(name, "CDpp", "DEVS"));
+		Structure structure = maParser.Parse(files.FindStream(".ma"), TEMPLATE);
 		
-		List<Message> messages = ParseLog(structure, files.FindStream("log"));
+		structure.setInfo(new StructureInfo(files.FindName(".ma"), "CDpp", "DEVS"));
+		
+		ParseLog(structure, files.FindStream("log"));
 				
-		return new Parsed(name, structure, messages);
+		return structure;
 	}
 		
-	private static List<Message> ParseLog(Structure structure, InputStream log) throws IOException {
+	private static void ParseLog(Structure structure, InputStream log) throws IOException {
 		List<Message> messages = new ArrayList<Message>();
-		
-		List<Model> coupled = structure.getNodes().stream().filter(md -> md.getType().equals("coupled")).collect(Collectors.toList());
-		
+				
 		Helper.ReadFile(log, (String l) -> {
 			// Mensaje Y / 00:00:20:000 / top(01) / packetsent /      1.00000 para Root(00)
 			if (!l.startsWith("Mensaje Y")) return;
@@ -49,10 +46,8 @@ public class Devs implements IParser {
 			String[] tmp2 = split[4].trim().split(" ");
 
 			String m = tmp1[0];		// model name
-			 			 
-			Optional<Model> model = coupled.stream().filter(md -> md.getName().equals(m)).findFirst();
-			 
-			if (model.isPresent()) return;	// Message corresponds to coupled model, we don't want those.
+			
+			if (structure.FindNode(m).getType() == Model.Type.COUPLED) return;	// Message corresponds to coupled model, we don't want those.
 			 			 			 	
 			String t = split[1];	// time
 			String p = split[3];	// port
@@ -62,26 +57,30 @@ public class Devs implements IParser {
 			BigDecimal number = new BigDecimal(v);  
 			
 			v = number.stripTrailingZeros().toPlainString();
+						
+			if (!structure.getTimesteps().contains(t)) structure.getTimesteps().add(t);
 			
-			messages.add(new Message(t, m, p, v));
+			Port port = structure.FindPort(m, p);
+			
+			messages.add(new Message(structure.getTimesteps().size() - 1, port, v));
 		});
 		
-		return messages;
+		structure.setMessages(messages);
 	}
-	
-	public static Boolean Validate(FilesMap files) throws IOException {
-		String ma = files.FindKey(".ma");
+
+	public Boolean Validate(FilesMap files) throws IOException {
+		InputStream ma = files.get(files.FindKey(".ma"));
 		InputStream log = files.get(files.FindKey(".log"));
 
 		if (ma == null || log == null) return false;
 
-		List<String> lines = Helper.ReadNLines(log, 3);
-
-		if (!lines.get(0).contains("Mensaje")) return false;
+		List<String> lines = Helper.ReadNLines(ma, 10);
 		
-		long n1 = lines.get(2).chars().filter(c -> c == '(').count();
-		long n2 = lines.get(2).chars().filter(c -> c == ')').count();
+		ma.reset();
 		
-		return n1 == 2 && n2 == 2;
+		long count = lines.stream().filter((String l) -> l.contains("type") && l.contains("cell"))
+									.count();
+	    
+	    return count == 0;
 	}
 }

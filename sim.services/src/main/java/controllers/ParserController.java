@@ -1,6 +1,5 @@
 package controllers;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.springframework.core.io.InputStreamResource;
@@ -15,9 +14,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import components.CustomException;
 import components.FilesMap;
+import components.Helper;
 import components.Utilities;
-import models.PaletteBucket;
-import models.Parsed;
+import models.simulation.Structure;
+import models.style.Style;
+import parsers.ILogParser;
 import parsers.IParser;
 import parsers.shared.Palette;
  
@@ -26,19 +27,46 @@ import parsers.shared.Palette;
 public class ParserController {
     
 	@PostMapping("/parser/palette/typeA")
-	public ResponseEntity<InputStreamResource> parserPaletteTypeA(@RequestParam("pal") MultipartFile pal) throws IOException
-	{    	        
-		List<List<PaletteBucket>> palette = (new Palette()).ParseTypeA(pal.getInputStream());
-		
-		return Utilities.JsonFileResponse(palette);
+	public ResponseEntity<InputStreamResource> parserPaletteTypeA(@RequestParam("pal") MultipartFile pal)
+	{    	     
+		try {   
+			Style style = (new Palette()).ParseTypeA(pal.getInputStream());
+					
+			return Utilities.JsonFileResponse("style", style.getLayers());
+		} 
+		catch (Exception e) {
+		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
+		}
 	}
 	
 	@PostMapping("/parser/palette/typeB")
-	public ResponseEntity<InputStreamResource> parserPaletteTypeB(@RequestParam("pal") MultipartFile pal) throws IOException
-	{    	        
-		List<List<PaletteBucket>> palette = (new Palette()).ParseTypeB(pal.getInputStream());
-		
-		return Utilities.JsonFileResponse(palette);
+	public ResponseEntity<InputStreamResource> parserPaletteTypeB(@RequestParam("pal") MultipartFile pal)
+	{    
+		try {	        
+			Style style = (new Palette()).ParseTypeB(pal.getInputStream());
+			
+			return Utilities.JsonFileResponse("style", style.getLayers());
+		} 
+		catch (Exception e) {
+		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
+		}
+	}
+	
+	@PostMapping("/parser/palette/auto")
+	public ResponseEntity<InputStreamResource> parserPaletteAuto(@RequestParam("files") List<MultipartFile> files)
+	{    	 
+		try {       
+			FilesMap map = Utilities.Convert(files);
+	
+			map.Mark(0);
+			
+			Style style = (new Palette()).Parse(map);
+			
+			return Utilities.JsonFileResponse("style", style.getLayers());
+		} 
+		catch (Exception e) {
+		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
+		}
 	}
 	  	
 	@PostMapping("/parser/auto")
@@ -46,12 +74,20 @@ public class ParserController {
 	{
 		try {
 			FilesMap map = Utilities.Convert(files);
+			
+			map.Mark(0);
+			
 			IParser parser = new parsers.auto.Auto();
-			Parsed result = parser.Parse(map);
+			Structure result = parser.Parse(map);
+			
+			// Parse palette if provided
+			Palette palParser = new parsers.shared.Palette();
+			
+			Style style = palParser.Parse(map);
 			
 			map.Close();
 			
-			return Utilities.ByteArrayResponse(result.name, result.toZipByteArray());
+			return Utilities.ByteArrayResponse(result.getName(), Helper.MakeZip(result, style));
 		} 
 		catch (Exception e) {
 		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
@@ -63,12 +99,12 @@ public class ParserController {
 	{    	        
 		try {
 			FilesMap map = Utilities.Convert(files);
-			IParser parser = new parsers.cdpp.Devs();
-			Parsed result = parser.Parse(map);
+			ILogParser parser = new parsers.cdpp.CellDevs();
+			Structure result = parser.Parse(map);
 			
 			map.Close();
 		  			  	
-			return Utilities.ByteArrayResponse(result.name, result.toZipByteArray());
+			return Utilities.ByteArrayResponse(result.getName(), Helper.MakeZip(result));
 		} 
 		catch (Exception e) {
 		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
@@ -80,12 +116,12 @@ public class ParserController {
 	{    	        
 		try {
 			FilesMap map = Utilities.Convert(files);
-			IParser parser = new parsers.cdpp.Devs();
-			Parsed result = parser.Parse(map);
+			ILogParser parser = new parsers.cdpp.Devs();
+			Structure result = parser.Parse(map);
 				
 			map.Close();
 		  			  	
-			return Utilities.ByteArrayResponse(result.name, result.toZipByteArray());
+			return Utilities.ByteArrayResponse(result.getName(), Helper.MakeZip(result));
 		} 
 		catch (Exception e) {
 		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
@@ -97,12 +133,12 @@ public class ParserController {
 	{    	        
 		try {
 			FilesMap map = Utilities.Convert(files);
-			IParser parser = new parsers.lopez.CellDevs();
-			Parsed result = parser.Parse(map);
+			ILogParser parser = new parsers.lopez.CellDevs();
+			Structure result = parser.Parse(map);
 		  				
 			map.Close();
 			
-			return Utilities.ByteArrayResponse(result.name, result.toZipByteArray());
+			return Utilities.ByteArrayResponse(result.getName(), Helper.MakeZip(result));
 		} 
 		catch (Exception e) {
 		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());

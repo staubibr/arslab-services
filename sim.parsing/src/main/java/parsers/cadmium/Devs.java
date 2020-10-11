@@ -6,37 +6,67 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import components.FilesMap;
 import components.Helper;
-import models.Link;
-import models.Message;
-import models.Model;
-import models.Parsed;
-import models.Port;
-import models.Structure;
-import models.StructureInfo;
-import parsers.IParser;
+import models.simulation.Link;
+import models.simulation.Message;
+import models.simulation.Port;
+import models.simulation.Structure;
+import models.simulation.StructureInfo;
+import parsers.ILogParser;
+import parsers.cadmium.config.devs.Model;
 
-public class Devs implements IParser {
+public class Devs implements ILogParser {
 
-	// private static final String TEMPLATE = "{\"value\":${0}}";
-	private static String time;
-
+	private static final String TEMPLATE = "{\"value\":${0}}";
+	
 	@Override
-	public Parsed Parse(FilesMap files) throws IOException {
-		String name = files.FindName("message");
-		Structure structure = new Structure(new StructureInfo(name, "Cadmium", "DEVS"));
-
-		structure.nodes = new ArrayList<Model>();
-		structure.ports = new ArrayList<Port>();
-		structure.links = new ArrayList<Link>();
+	public Structure Parse(FilesMap files) throws IOException {
+		Structure structure = ParseStructure(files.FindStream(".json"));
 		
-		List<Message> messages = ParseLog(structure, files.FindStream("message"));
-
-		return new Parsed(name, structure, messages);
+		structure.setInfo(new StructureInfo(files.FindName("message"), "Cadmium", "DEVS"));
+		
+		ParseLog(structure, files.FindStream("message"));
+				
+		return structure;
 	}
 
-	private static List<Message> ParseLog(Structure structure, InputStream log) throws IOException {
+	public Structure ParseStructure(InputStream json) throws IOException {	
+		Structure s = new Structure();
+		
+		ObjectMapper mapper = new ObjectMapper();
+		
+		Model jModel = mapper.readValue(json, Model.class);
+		
+		jModel.Traverse(m -> {
+			models.simulation.Model.Type mType = m.getSubmodels().size() > 0 ? models.simulation.Model.Type.COUPLED :  models.simulation.Model.Type.ATOMIC; 
+			
+			models.simulation.Model sModel = s.CreateModel(m.getName(), mType, TEMPLATE);
+			
+			m.getPorts().forEach(p -> {
+				models.simulation.Port.Type pType = p.getType() == "output" ? models.simulation.Port.Type.OUTPUT : models.simulation.Port.Type.INPUT;
+				
+				s.CreatePort(sModel, p.getName(), pType, TEMPLATE);
+			});
+		});
+		
+		jModel.Traverse(m -> {
+			m.getCouplings().forEach(c -> {
+				c.setModel(m.getName());
+
+				models.simulation.Port start = s.FindPort(c.getModelA(), c.getPortA());
+				models.simulation.Port end = s.FindPort(c.getModelB(), c.getPortB());
+				
+				s.getLinks().add(new Link(start, end));
+			});
+		});
+
+		return s;
+	}
+	
+	private void ParseLog(Structure structure, InputStream log) throws IOException {
 		List<Message> messages = new ArrayList<Message>();
 		
 		Helper.ReadFile(log, (String l) -> {
@@ -48,7 +78,7 @@ public class Devs implements IParser {
 				String right = l.substring(i); 
 				
 				// Read model name from right hand side
-				String model = right.trim().split(" ")[3];
+				String m = right.trim().split(" ")[3];
 				
 				// Process left hand side
 				String clean = left.substring(1, left.length() - 1).replace(" ", "").replace("::",  ":");
@@ -57,19 +87,28 @@ public class Devs implements IParser {
 					// Sender_defs:packetSentOut:{1}
 					String[] e = s.split(":");
 					
-					String values = e[e.length - 1].replaceAll("\\{|\\}|<|>|\\s", "");					
-					String port = e[e.length - 2];
+					String v = e[e.length - 1].replaceAll("\\{|\\}|<|>|\\s", "");					
 					
-					messages.add(new Message(time, model, port, values.split(",")));
+					if (v.length() == 0) return;
+					
+					String p = e[e.length - 2];
+													
+					Port port = structure.FindPort(m, p);
+															
+					messages.add(new Message(structure.getTimesteps().size() - 2, port, v.split(",")));
 				});
 			}
-			else time = l;
+			
+			else structure.getTimesteps().add(l);
 		});
 		
-		return messages;
+		// Cadmium has an extra timestep 0
+		structure.getTimesteps().remove(0);
+		
+		structure.setMessages(messages);
 	}
 	
-	public static Boolean Validate(FilesMap files) throws IOException {
+	public Boolean Validate(FilesMap files) throws IOException {
 		InputStream messages = files.FindStream("message");
 		// InputStream states = files.FindStream("state");
 
@@ -81,6 +120,8 @@ public class Devs implements IParser {
 		
 		List<String> lines = Helper.ReadNLines(messages, 3);
 
+		messages.reset();
+		
 		long n1 = lines.get(2).chars().filter(c -> c == '(').count();
 		long n2 = lines.get(2).chars().filter(c -> c == ')').count();
 

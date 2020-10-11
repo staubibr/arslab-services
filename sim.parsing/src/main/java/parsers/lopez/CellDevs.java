@@ -9,43 +9,41 @@ import java.util.List;
 
 import components.FilesMap;
 import components.Helper;
-import models.MessageCA;
-import models.Parsed;
-import models.Port;
-import models.Structure;
-import models.StructureInfo;
-import parsers.IParser;
+import models.simulation.MessageCA;
+import models.simulation.Port;
+import models.simulation.Structure;
+import models.simulation.StructureInfo;
+import parsers.ILogParser;
 import parsers.shared.Ma;
 
 // TODO: This is very similar to CDpp Cell-DEVS, maybe they could be combined
-public class CellDevs implements IParser {
+public class CellDevs implements ILogParser {
 
 	private static final String TEMPLATE = "{\"value\":${0}}";
 		
-	public Parsed Parse(FilesMap files)  throws IOException {
-		String name = files.FindName(".ma");
-		Structure structure = (new Ma()).ParseCA(files.FindStream(".ma"), TEMPLATE);
-				
+	public Structure Parse(FilesMap files)  throws IOException {
+		Ma maParser = new Ma();
+		
+		Structure structure = maParser.ParseCA(files.FindStream(".ma"), TEMPLATE);
+		
+		structure.setInfo(new StructureInfo(files.FindName(".ma"), "Lopez", "Cell-DEVS"));
+		
 		FixStructure(structure);
-				
-		structure.setInfo(new StructureInfo(name, "Lopez", "Cell-DEVS"));
 		
-		List<MessageCA> messages = ParseLog(structure, files.FindStream(".log"));
+		ParseLog(structure, files.FindStream(".log"));
 		
-		return new Parsed(name, structure, messages);
+		return structure;
 	}
 	
 	private static void FixStructure(Structure structure) {
-		structure.getPorts().forEach(p -> p.name = "out_" + p.name);
+		structure.getPorts().forEach(p -> p.setName("out_" + p.getName()));
 		
 		structure.getNodes().forEach(m -> {
-			structure.getPorts().add(new Port(m.name, "out", "output", TEMPLATE));
+			structure.CreatePort(m, "out", Port.Type.OUTPUT, TEMPLATE);
 		});
-		
-		structure.getPorts().forEach(p -> p.template = "{\"value\":${0}}");
 	}
 	
-	private static List<MessageCA> ParseLog(Structure structure, InputStream log) throws IOException {				
+	private static void ParseLog(Structure structure, InputStream log) throws IOException {				
 		List<MessageCA> messages = new ArrayList<MessageCA>();
 		
 		Helper.ReadFile(log, (String l) -> {
@@ -75,21 +73,27 @@ public class CellDevs implements IParser {
 			BigDecimal number = new BigDecimal(v);  
 			
 			v = number.stripTrailingZeros().toPlainString();
-						
-			messages.add(new MessageCA(t, m, c, p, v));
+			
+			if (!structure.getTimesteps().contains(t)) structure.getTimesteps().add(t);
+
+			Port port = structure.FindPort(m, p);
+			
+			messages.add(new MessageCA(structure.getTimesteps().size() - 1, port, c, v));
 		});
 		
-		return messages;
+		structure.setMessages(messages);
 	}
 	
-	public static Boolean Validate(FilesMap files) throws IOException {
+	public Boolean Validate(FilesMap files) throws IOException {
 		String ma = files.FindKey(".ma");
 		InputStream log = files.get(files.FindKey(".log"));
 
 		if (ma == null || log == null) return false;
 
 		List<String> lines = Helper.ReadNLines(log, 1);
-
+		
+		log.reset();
+		
 		// 0 / L / Y is the Lopez format, as far as I know, Lopez only does Cell-DEVS
 		return (lines.get(0).contains("0 / L / "));
 	}

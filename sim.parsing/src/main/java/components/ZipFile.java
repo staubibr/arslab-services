@@ -23,17 +23,29 @@ public class ZipFile {
 		this.zos.close();
 	}
 	
-	public void Add(String name, byte[] buffer) throws IOException {
+	public void NewEntry(String name) throws IOException {
 	    ZipEntry entry = new ZipEntry(name);
-	    
-	    entry.setSize(buffer.length);
-	    
+	    	    
 	    this.zos.putNextEntry(entry);
-	    this.zos.write(buffer);
+	}
+	
+	public void CloseEntry() throws IOException {
 	    this.zos.closeEntry();
 	}
 	
+	public void Write(byte[] buffer) throws IOException {
+	    this.zos.write(buffer);
+	}
+	
+	public void WriteFull(String name, byte[] buffer) throws IOException {
+		this.NewEntry(name);
+		
+		this.Write(buffer);
+		
+		this.CloseEntry();
+	}
+	
 	public byte[] toByteArray() {
-		return this.baos.toByteArray();
+		return this.baos.toByteArray();		
 	}
 }

@@ -41,21 +41,23 @@ public class Utilities {
 	   	        .body(buffer);
 	}
     
-	public static ResponseEntity<InputStreamResource> FileResponse(byte[] buffer) throws JsonProcessingException {	
+	public static ResponseEntity<InputStreamResource> FileResponse(String filename, byte[] buffer) throws JsonProcessingException {	
 	   	return ResponseEntity.ok()
 	   	        .contentLength(buffer.length)
-	   	        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+	   	        .header("Content-Disposition", "attachment; filename=" + filename + ".json")
+	   	        .header("Access-Control-Allow-Headers", "Content-Disposition")
+	   	        .header("Access-Control-Expose-Headers", "Content-Disposition")
 	   	        .body(new InputStreamResource(new ByteArrayInputStream(buffer)));
 	}
 	
-	public static ResponseEntity<InputStreamResource> JsonFileResponse(Object object) throws JsonProcessingException {
+	public static ResponseEntity<InputStreamResource> JsonFileResponse(String filename, Object object) throws JsonProcessingException {
 	   	ObjectMapper mapper = new ObjectMapper();
 	   	
 	   	mapper.setSerializationInclusion(Include.NON_EMPTY); 
 	   	
 	   	byte[] buf = mapper.writeValueAsBytes(object);
 	
-	   	return FileResponse(buf);
+	   	return FileResponse(filename, buf);
 	}
 	
 	public static String GetFilename(MultipartFile file) {

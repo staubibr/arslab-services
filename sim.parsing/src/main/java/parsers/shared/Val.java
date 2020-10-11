@@ -7,12 +7,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import components.Helper;
-import models.MessageCA;
-import models.Model;
+import models.simulation.IEmitter;
+import models.simulation.MessageCA;
 
 public class Val {
 
-	public List<MessageCA> Parse(InputStream val, Model model) throws IOException {
+	public List<MessageCA> Parse(InputStream val, IEmitter emitter) throws IOException {
 		// (0,0,0)=100
 		ArrayList<MessageCA> messages = new ArrayList<MessageCA>();
 		
@@ -31,7 +31,7 @@ public class Val {
 			
 			String value = l.substring(vI + 1);
 			
-			messages.add(new MessageCA("00:00:00:000", model.name, coord, "out", value));
+			messages.add(new MessageCA(0, emitter, coord, value));
 		});
 		
 		return messages;

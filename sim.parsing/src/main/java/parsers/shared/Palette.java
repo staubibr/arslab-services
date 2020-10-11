@@ -1,24 +1,29 @@
 package parsers.shared;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
+import components.FilesMap;
 import components.Helper;
-import models.PaletteBucket;
+import models.style.Bucket;
+import models.style.LayerStyle;
+import models.style.Style;
 
 public class Palette {
-
-	public List<List<PaletteBucket>> ParseTypeA(InputStream pal) throws IOException {
-		// Type A: [rangeBegin;rangeEnd] R G B
-		ArrayList<PaletteBucket> palette = new ArrayList<PaletteBucket>();
+	
+	public Style ParseTypeA(InputStream pal) throws IOException {		
+		Style style = new Style();
 		
+		style.getLayers().add(new LayerStyle());
+		
+		LayerStyle layer = style.getLayers().get(0);
+		
+		// Type A: [rangeBegin;rangeEnd] R G B
 		Helper.ReadFile(pal, (String l) -> {			
 			if (l.isBlank()) return;
-
+			
 			if (!l.startsWith("[")) throw new RuntimeException("File format does not correspond to a type A palette.");
 			
 			String[] split = l.split(", | |,");
@@ -31,19 +36,24 @@ public class Palette {
 			
 			float start = Float.parseFloat(bucket[0]);
 			float end = Float.parseFloat(bucket[1]);
-						
-			palette.add(new PaletteBucket(start, end, new int[] { r,g,b }));			
+			
+			layer.getBuckets().add(new Bucket(start, end, new int[] { r,g,b }));
 		});
 		
-		return Arrays.asList(palette);
+		return style;
 	}
 
-	public List<List<PaletteBucket>> ParseTypeB(InputStream pal) throws IOException {
+	public Style ParseTypeB(InputStream pal) throws IOException {
+		Style style = new Style();
+		
+		style.getLayers().add(new LayerStyle());
+		
+		LayerStyle layer = style.getLayers().get(0);
+		
 		// Type B (VALIDSAVEFILE: lists R,G,B then lists ranges)
 		// TODO: What is VALIDSAVEDFILE??
 		ArrayList<float[]> ranges = new ArrayList<float[]>();
 		ArrayList<int[]> colors = new ArrayList<int[]>();
-		ArrayList<PaletteBucket> palette = new ArrayList<PaletteBucket>();
 
 		Helper.ReadFile(pal, (String l) -> {			
 			if (l.isBlank()) return;
@@ -65,34 +75,28 @@ public class Palette {
 
 		// populate grid palette object
 		for (int i = 0; i < ranges.size(); i++) {
-			palette.add(new PaletteBucket(ranges.get(i)[0], ranges.get(i)[1], new int[] { colors.get(i)[0], colors.get(i)[1], colors.get(i)[2] }));			
+			layer.getBuckets().add(new Bucket(ranges.get(i)[0], ranges.get(i)[1], new int[] { colors.get(i)[0], colors.get(i)[1], colors.get(i)[2] }));			
 		}
 
-		return Arrays.asList(palette);
+		return style;
 	}
 	
-	public List<List<PaletteBucket>> Parse(BufferedInputStream pal) throws IOException {
-		pal.mark(0);
+	public Style Parse(FilesMap files) throws IOException {
+		InputStream pal = files.FindStream(".pal");
+		
+		if (pal == null) return null;
 		
 		List<String> lines = Helper.ReadNLines(pal, 1);
 		
 		if (lines.size() < 1) return null;
+
+		// TODO: make the Palette parser into an implementation of IParser. This way, we can instantiate
+		// reset, then parse
+		pal.reset();
 		
-		else if (lines.get(0).contains("VALIDSAVEDFILE")) {
-			// TODO: make the Palette parser into an implementation of IParser. This way, we can instantiate
-			// reset, then parse
-			pal.reset();
-			
-			return ParseTypeB(pal); 
-		}
+		if (lines.get(0).contains("VALIDSAVEDFILE")) return ParseTypeB(pal); 
 		
-		else if (lines.get(0).startsWith("[")) {
-			// TODO: make the Palette parser into an implementation of IParser. This way, we can instantiate
-			// reset, then parse
-			pal.reset();
-			
-			return ParseTypeA(pal);
-		}
+		else if (lines.get(0).startsWith("[")) return ParseTypeA(pal);
 		
 		else return null;
 	}
