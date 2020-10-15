@@ -114,7 +114,7 @@ public class FrameworkService {
    	 }
   	JSONArray ja = new JSONArray();
  	 for (int i = 0; i < fileName.length; i++) {
-    	if(fileName[i] != null) {
+    	if(fileName[i] != null  && fileName[i].charAt(0)!='.') {
     		String ext1 = FilenameUtils.getExtension(fileName[i]);
     		JSONObject jo = new JSONObject();
     	
@@ -122,6 +122,13 @@ public class FrameworkService {
     		{
     		
     			jo.put("-ftype", "ma");
+    			jo.put("#text", fileName[i]);
+    		
+    		}
+    		else if(ext1.equals("inc"))
+    		{
+    		
+    			jo.put("-ftype", "inc");
     			jo.put("#text", fileName[i]);
     		
     		}
@@ -250,7 +257,7 @@ public class FrameworkService {
 	    catch (Exception e) {
 	        message = e.getMessage();
 	    }
-	    if( response.getStatusCodeValue()==200)
+	    if(response!= null && response.getStatusCodeValue()==200)
 	    { Connection connection = ConnectionFactory.getConnection();
 	    	try{
 	    		
@@ -275,7 +282,8 @@ public class FrameworkService {
 				
 	    }
 	    System.out.println(message);
-		return response.getStatusCodeValue();
+	    if(response!= null )	return response.getStatusCodeValue();
+	    else return -1;
 		
 	}
 
@@ -338,7 +346,7 @@ public class FrameworkService {
 		 String URL =  "http://vs1.sce.carleton.ca:8080/cdpp/sim/workspaces" ;
 
 		  String xml = U.jsonToXml(json.toString());
-	
+	System.out.println(xml);
 		URL = URL.concat("/");
 		URL = URL.concat(username);
 		URL = URL.concat("/");

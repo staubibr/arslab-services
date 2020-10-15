@@ -330,20 +330,23 @@ public class ResultsService {
 	        				
 	        				while ((zipEntry = zi.getNextEntry()) != null) {
 	        					if (zipEntry.isDirectory()) continue;
-	        					
-	        			        int size = (int)zipEntry.getSize();
+//	        					if (zipEntry.getName().charAt(0) =='_') continue;
+	        			        int size = (int) zipEntry.getSize();
+	        			        System.out.println(zipEntry);
+	        			        System.out.println(zipEntry.getSize());
+	        			       
+	        			        	
+//	        			        byte[] bytes = new byte[size];
+//	        			        
+//	        			        int read = 0;
+//	        			        
+//	        			        while (read < size) read += zi.read(bytes, read, (size - read));
+//	        			        
+//	        			        InputStream bis = new ByteArrayInputStream(bytes);
+//	        			        BufferedInputStream is = new BufferedInputStream(bis);
+//	        			        String[] parts2 = zipEntry.getName().split("/");
+//	        			        map.put(parts2[1], is);
 	        			        
-	        			        byte[] bytes = new byte[size];
-	        			        
-	        			        int read = 0;
-	        			        
-	        			        while (read < size) read += zi.read(bytes, read, (size - read));
-	        			        
-	        			        InputStream bis = new ByteArrayInputStream(bytes);
-	        			        BufferedInputStream is = new BufferedInputStream(bis);
-	        			        String[] parts2 = zipEntry.getName().split("/");
-	        			        map.put(parts2[1], is);
-	 	
 	        				} 
 	        				zi.close(); 
 		   	            	  
@@ -353,7 +356,7 @@ public class ResultsService {
 	            	    }
 //	            	    InputStream log = map.get(map.FindKey(".log"));
 //	    				System.out.println(log.readAllBytes().length );	
-//	    				System.out.println(map);  
+	    				System.out.println(map);  
 	            	    IParser parser = new Auto();
 	    				
 	    				Parsed results = parser.Parse(map);
@@ -373,23 +376,7 @@ public class ResultsService {
 return null;
 }
 
-	private void postFiles(List<MultipartFile> simFiles ) throws IOException {
-		try {
-			FilesMap map = Utilities.Convert(simFiles);
-			IParser parser = new parsers.auto.Auto();
-			Parsed result = parser.Parse(map);
-			
-			map.Close();
-			
-			ResponseEntity<byte[]> ax= Utilities.ByteArrayResponse(result.name, result.toZipByteArray());
-			System.out.println(ax);
-		} 
-		catch (Exception e) {
-		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
-		}
-	}
-	
-	
+
 	
 	public String getDebugResultsURL(String username, String servicetype, String framework) {
 		 String URL =  "http://vs1.sce.carleton.ca:8080/cdpp/sim/workspaces" ;
