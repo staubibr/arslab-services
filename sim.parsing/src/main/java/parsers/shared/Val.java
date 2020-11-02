@@ -18,7 +18,7 @@ public class Val {
 		
 		Helper.ReadFile(val, (String l) -> {
 			// probably empty line
-			if (l.isBlank() || l.length() < 4) return;
+			if (l == null || l.isEmpty()) return;
 
 			if (!l.startsWith("(")) throw new RuntimeException("File format does not correspond to a val file.");
 			

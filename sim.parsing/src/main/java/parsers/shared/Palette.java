@@ -16,8 +16,8 @@ public class Palette {
 		// Type A: [rangeBegin;rangeEnd] R G B
 		ArrayList<PaletteBucket> palette = new ArrayList<PaletteBucket>();
 		
-		Helper.ReadFile(pal, (String l) -> {			
-			if (l.isBlank()) return;
+		Helper.ReadFile(pal, (String l) -> {		
+			if (l == null || l.isEmpty()) return;
 
 			if (!l.startsWith("[")) throw new RuntimeException("File format does not correspond to a type A palette.");
 			
@@ -46,7 +46,7 @@ public class Palette {
 		ArrayList<PaletteBucket> palette = new ArrayList<PaletteBucket>();
 
 		Helper.ReadFile(pal, (String l) -> {			
-			if (l.isBlank()) return;
+			if (l == null || l.isEmpty()) return;
 
 			// check number of components per line
 			String[] split = l.split(",");		
@@ -64,7 +64,7 @@ public class Palette {
 		if (ranges.size() != colors.size()) throw new RuntimeException("Ranges and colors length must match in palette type B.");
 
 		// populate grid palette object
-		for (var i = 0; i < ranges.size(); i++) {
+		for (int i = 0; i < ranges.size(); i++) {
 			palette.add(new PaletteBucket(ranges.get(i)[0], ranges.get(i)[1], new int[] { colors.get(i)[0], colors.get(i)[1], colors.get(i)[2] }));			
 		}
 
