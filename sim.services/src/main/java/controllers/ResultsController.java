@@ -3,10 +3,14 @@ package controllers;
 import java.io.IOException;
 import java.sql.SQLException;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+
+import components.CustomException;
 import services.ResultsService;
 
 @RestController
@@ -61,15 +65,20 @@ public class ResultsController {
 	}
 
 	/*
-	 * Simulation Everything - Get
+	 * Simulation Parsed Results - Get
 	 */
-	@GetMapping(path = "/workspaces/{username}/{servicetype}/{framework}/getAllInfo")
+	@GetMapping(path = "/workspaces/{username}/{servicetype}/{framework}/getParsedResults")
 
-	public String getAllInfo(@PathVariable String username, @PathVariable String servicetype,
+	public ResponseEntity<byte[]> getParsedResults(@PathVariable String username, @PathVariable String servicetype,
 			@PathVariable String framework) throws IOException, SQLException {
-		ResultsService service = new ResultsService();
-		String x = service.getAllInfo(username, servicetype, framework);
-		return x;
+		try {
+			ResultsService service = new ResultsService();
+			ResponseEntity<byte[]> x = service.getParsedResults(username, servicetype, framework);
+			return x;	
+		} catch (Exception e) {
+			throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
 
+		}
+		
 	}
 }

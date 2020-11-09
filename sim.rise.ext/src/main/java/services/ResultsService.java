@@ -4,8 +4,6 @@ package services;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -18,22 +16,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.springframework.mock.web.MockMultipartFile;
 import org.apache.tomcat.util.codec.binary.Base64;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
 
 import components.CustomException;
 import components.FilesMap;
@@ -259,40 +247,40 @@ public class ResultsService {
 
 	}
 
-	public String getAllInfo(String username, String servicetype, String framework) throws IOException {
-		List<String> filenames = new ArrayList<>(); 
-		List<BufferedInputStream> buffstream = new ArrayList<>(); 
-		Connection connection = ConnectionFactory.getConnection();
-		byte buff[] = new byte[10000];
+	public ResponseEntity<byte[]> getParsedResults(String username, String servicetype, String framework) throws IOException {
 
-		// InputStream debug = getDebugResults(username,  servicetype,  framework);
+		Connection connection = ConnectionFactory.getConnection();
+
 		 InputStream result = getSimResults(username,  servicetype,  framework);
 		 ZipInputStream result_stream = null;
 		 FilesMap map = new FilesMap();
 		 try {
-			 result_stream = new ZipInputStream(result);
-				ZipEntry entry = null;
+			 if(result !=null)
+			 {
+				 result_stream = new ZipInputStream(result);
+					ZipEntry entry = null;
 
-				
-				while ((entry = result_stream.getNextEntry()) != null) {
-					if (entry.isDirectory()) continue;
 					
-			        int size = (int)entry.getSize();
-			        
-			        byte[] bytes = new byte[size];
-			        
-			        int read = 0;
-			        
-			        while (read < size) read += result_stream.read(bytes, read, (size - read));
-			        
-			        InputStream bis = new ByteArrayInputStream(bytes);
-			        BufferedInputStream is = new BufferedInputStream(bis);
-			        String[] parts = entry.getName().split("/");
-			        map.put(parts[1], is);
-				}
-				
-				result_stream.close();	
-				
+					while ((entry = result_stream.getNextEntry()) != null) {
+						if (entry.isDirectory()) continue;
+						
+				        int size = (int)entry.getSize();
+				        
+				        byte[] bytes = new byte[size];
+				        
+				        int read = 0;
+				        
+				        while (read < size) read += result_stream.read(bytes, read, (size - read));
+				        
+				        InputStream bis = new ByteArrayInputStream(bytes);
+				        BufferedInputStream is = new BufferedInputStream(bis);
+				        String[] parts = entry.getName().split("/");
+				        map.put(parts[1], is);
+					}
+					
+					result_stream.close();	
+
+			 }
 			} 
 		 catch (IOException ec) {
 		        System.out.println("Error while extract the zip: "+ec);
@@ -323,6 +311,8 @@ public class ResultsService {
 	         
 	            	  ZipInputStream zi = null;
 	            	    try {
+	            	   	 if(new ByteArrayInputStream(dbresults.getBytes(6)) !=null)
+	            	   	 {
 	            	        zi = new ZipInputStream(new ByteArrayInputStream(dbresults.getBytes(6)));
 	            	      
 	            	        ZipEntry zipEntry = null;
@@ -330,40 +320,33 @@ public class ResultsService {
 	        				
 	        				while ((zipEntry = zi.getNextEntry()) != null) {
 	        					if (zipEntry.isDirectory()) continue;
-//	        					if (zipEntry.getName().charAt(0) =='_') continue;
+
 	        			        int size = (int) zipEntry.getSize();
-	        			        System.out.println(zipEntry);
-	        			        System.out.println(zipEntry.getSize());
 	        			       
 	        			        	
-//	        			        byte[] bytes = new byte[size];
-//	        			        
-//	        			        int read = 0;
-//	        			        
-//	        			        while (read < size) read += zi.read(bytes, read, (size - read));
-//	        			        
-//	        			        InputStream bis = new ByteArrayInputStream(bytes);
-//	        			        BufferedInputStream is = new BufferedInputStream(bis);
-//	        			        String[] parts2 = zipEntry.getName().split("/");
-//	        			        map.put(parts2[1], is);
+	        			        byte[] bytes = new byte[size];
+	        			        
+	        			        int read = 0;
+	        			        
+	        			        while (read < size) read += zi.read(bytes, read, (size - read));
+	        			        
+	        			        InputStream bis = new ByteArrayInputStream(bytes);
+	        			        BufferedInputStream is = new BufferedInputStream(bis);
+        			        String[] parts2 = zipEntry.getName().split("/");
+        			        map.put(parts2[1], is);
 	        			        
 	        				} 
 	        				zi.close(); 
+	            	   	 }
 		   	            	  
 	            	    } 
 	            	    catch (IOException e) {
 	            	        System.out.println("Error while extract the zip: "+e);
 	            	    }
-//	            	    InputStream log = map.get(map.FindKey(".log"));
-//	    				System.out.println(log.readAllBytes().length );	
-	    				System.out.println(map);  
-	            	    IParser parser = new Auto();
-	    				
-	    				Parsed results = parser.Parse(map);
-	    				
-	        		
 
 	            }
+	        	 
+        	  
 	            
 	        } catch (SQLException e) {
 	            System.out.println("SQLException in get() method");
@@ -371,9 +354,19 @@ public class ResultsService {
 	        } finally {
 	            DbUtil.close(connection);
 	        }
+	        Parsed results = null;
+	        try {
+	        IParser parser = new Auto();
+			
+			results = parser.Parse(map);
+	        return Utilities.ByteArrayResponse(results.name, results.toZipByteArray());	
+	        }
+	        catch (Exception e) {
+	            System.out.println("Could not Parse the results");
+	            e.printStackTrace();
+	            throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
+	        } 
 
-	
-return null;
 }
 
 

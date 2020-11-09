@@ -1,6 +1,7 @@
 package components;
 
 import org.springframework.http.HttpStatus;
+import components.CustomException;
 
 public class CustomException extends RuntimeException {
 	
