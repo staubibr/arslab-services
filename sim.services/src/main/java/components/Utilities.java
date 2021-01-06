@@ -1,6 +1,5 @@
 package components;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,9 +22,7 @@ public class Utilities {
 		// Stupid lambda requires a try catch block in the lambda function
 		for (int i = 0; i < files.size(); i++) {
 			InputStream ipt = files.get(i).getInputStream();
-			BufferedInputStream bIpt = new BufferedInputStream(ipt);
-			
-			map.put(files.get(i).getOriginalFilename(), bIpt);
+			map.put(files.get(i).getOriginalFilename(), ipt.readAllBytes());
 		}
 		
 		return map;

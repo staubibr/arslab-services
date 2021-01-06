@@ -21,12 +21,12 @@ import models.style.Style;
 import parsers.ILogParser;
 import parsers.IParser;
 import parsers.shared.Palette;
- 
+
+@CrossOrigin(origins="*")
 @RestController
-@CrossOrigin(origins = "*")
 public class ParserController {
     
-	@PostMapping("/parser/palette/typeA")
+	@PostMapping(path="/parser/palette/typeA")
 	public ResponseEntity<InputStreamResource> parserPaletteTypeA(@RequestParam("pal") MultipartFile pal)
 	{    	     
 		try {   
@@ -39,7 +39,7 @@ public class ParserController {
 		}
 	}
 	
-	@PostMapping("/parser/palette/typeB")
+	@PostMapping(path="/parser/palette/typeB")
 	public ResponseEntity<InputStreamResource> parserPaletteTypeB(@RequestParam("pal") MultipartFile pal)
 	{    
 		try {	        
@@ -52,14 +52,12 @@ public class ParserController {
 		}
 	}
 	
-	@PostMapping("/parser/palette/auto")
+	@PostMapping(path="/parser/palette/auto")
 	public ResponseEntity<InputStreamResource> parserPaletteAuto(@RequestParam("files") List<MultipartFile> files)
 	{    	 
 		try {       
 			FilesMap map = Utilities.Convert(files);
-	
-			map.Mark(0);
-			
+				
 			Style style = (new Palette()).Parse(map);
 			
 			return Utilities.JsonFileResponse("style", style.getLayers());
@@ -69,13 +67,13 @@ public class ParserController {
 		}
 	}
 	  	
-	@PostMapping("/parser/auto")
+	@PostMapping(path="/parser/auto")
 	public ResponseEntity<byte[]> parserAuto(@RequestParam("files") List<MultipartFile> files)
 	{
 		try {
 			FilesMap map = Utilities.Convert(files);
 			
-			map.Mark(0);
+			// map.Mark(0);
 			
 			IParser parser = new parsers.auto.Auto();
 			Structure result = parser.Parse(map);
@@ -85,7 +83,7 @@ public class ParserController {
 			
 			Style style = palParser.Parse(map);
 			
-			map.Close();
+			// map.Close();
 			
 			return Utilities.ByteArrayResponse(result.getName(), Helper.MakeZip(result, style));
 		} 
@@ -94,7 +92,7 @@ public class ParserController {
 		}
 	}
 	
-	@PostMapping("/parser/cdpp/celldevs")
+	@PostMapping(path="/parser/cdpp/celldevs")
 	public ResponseEntity<byte[]> parserCdppCellDevs(@RequestParam("files") List<MultipartFile> files)
 	{    	        
 		try {
@@ -102,7 +100,7 @@ public class ParserController {
 			ILogParser parser = new parsers.cdpp.CellDevs();
 			Structure result = parser.Parse(map);
 			
-			map.Close();
+			// map.Close();
 		  			  	
 			return Utilities.ByteArrayResponse(result.getName(), Helper.MakeZip(result));
 		} 
@@ -111,7 +109,7 @@ public class ParserController {
 		}
 	}
 	   
-	@PostMapping("/parser/cdpp/devs")
+	@PostMapping(path="/parser/cdpp/devs")
 	public ResponseEntity<byte[]> parserCdppDevs(@RequestParam("files") List<MultipartFile> files)
 	{    	        
 		try {
@@ -119,7 +117,7 @@ public class ParserController {
 			ILogParser parser = new parsers.cdpp.Devs();
 			Structure result = parser.Parse(map);
 				
-			map.Close();
+			// map.Close();
 		  			  	
 			return Utilities.ByteArrayResponse(result.getName(), Helper.MakeZip(result));
 		} 
@@ -128,7 +126,7 @@ public class ParserController {
 		}
 	}
 	   
-	@PostMapping("/parser/lopez/celldevs")
+	@PostMapping(path="/parser/lopez/celldevs")
 	public ResponseEntity<byte[]> parserLopezCellDevs(@RequestParam("files") List<MultipartFile> files)
 	{    	        
 		try {
@@ -136,7 +134,7 @@ public class ParserController {
 			ILogParser parser = new parsers.lopez.CellDevs();
 			Structure result = parser.Parse(map);
 		  				
-			map.Close();
+			// map.Close();
 			
 			return Utilities.ByteArrayResponse(result.getName(), Helper.MakeZip(result));
 		} 

@@ -81,18 +81,20 @@ public class CellDevs implements ILogParser {
 			messages.add(new MessageCA(structure.getTimesteps().size() - 1, port, c, v));
 		});
 		
+		log.close();
+		
 		structure.setMessages(messages);
 	}
 	
 	public Boolean Validate(FilesMap files) throws IOException {
 		String ma = files.FindKey(".ma");
-		InputStream log = files.get(files.FindKey(".log"));
+		InputStream log = files.FindStream(".log");
 
 		if (ma == null || log == null) return false;
 
 		List<String> lines = Helper.ReadNLines(log, 1);
 		
-		log.reset();
+		log.close();
 		
 		// 0 / L / Y is the Lopez format, as far as I know, Lopez only does Cell-DEVS
 		return (lines.get(0).contains("0 / L / "));

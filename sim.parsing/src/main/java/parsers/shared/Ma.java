@@ -27,7 +27,10 @@ public class Ma {
 	private ModelCA ReadModelCA(Structure structure, String l, ArrayList<String> ignore, String template) {
 		String name = l.substring(1, l.length() - 1);
 
-		if (ignore.contains(name)) return null; 
+		long isIgnored = ignore.stream().filter(i -> name.contains(i))
+									    .count();
+		
+		if (isIgnored > 0) return null; 
 
 		return structure.CreateModelCA(name, Model.Type.COUPLED, template);
 	}
@@ -147,6 +150,7 @@ public class Ma {
 		ArrayList<String> ignore = new ArrayList<String>();
 
 		ignore.add("top");
+		ignore.add("-rule");
 		
 		Helper.ReadFile(ma, (String line) -> {
 			String[] lr = line.trim().toLowerCase().split(":");

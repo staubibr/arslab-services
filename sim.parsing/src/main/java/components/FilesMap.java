@@ -1,16 +1,16 @@
 package components;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.HashMap;
 
-public class FilesMap extends HashMap<String, BufferedInputStream>{
+public class FilesMap extends HashMap<String, byte[]>{
 	private static final long serialVersionUID = 1L;
-
+/*
 	public void Mark(int pos) throws IOException {
 		// Reset Streams to read them again later.
 		// foreach requires a try catch block or a biconsumer declaration, awkward.
-		for (Entry<String, BufferedInputStream> entry : this.entrySet()) {
+		for (Entry<String, byte[]> entry : this.entrySet()) {
 			entry.getValue().mark(pos);
 		}
 	}
@@ -18,7 +18,7 @@ public class FilesMap extends HashMap<String, BufferedInputStream>{
 	public void Reset() throws IOException {
 		// Reset Streams to read them again later.
 		// foreach requires a try catch block or a biconsumer declaration, awkward.
-		for (Entry<String, BufferedInputStream> entry : this.entrySet()) {
+		for (Entry<String, byte[]> entry : this.entrySet()) {
 			entry.getValue().reset();
 		}
 	}
@@ -26,10 +26,11 @@ public class FilesMap extends HashMap<String, BufferedInputStream>{
 	public void Close() throws IOException {
 		// Reset Streams to read them again later.
 		// foreach requires a try catch block or a biconsumer declaration, awkward.
-		for (Entry<String, BufferedInputStream> entry : this.entrySet()) {
+		for (Entry<String, byte[]> entry : this.entrySet()) {
 			entry.getValue().close();
 		}
 	}
+*/
 	
 	public String FindKey(String text) {
 		return this.keySet().stream()
@@ -44,9 +45,14 @@ public class FilesMap extends HashMap<String, BufferedInputStream>{
 		return (key == null) ? null : key.substring(0, key.indexOf("."));
 	}
 	
-	public BufferedInputStream FindStream(String text) {
+	public InputStream FindStream(String text) {
 		String key = FindKey(text);
 		
-		return (key == null) ? null : this.get(key);
+		if (key == null) return null;
+		
+		byte[] data = this.get(key);
+		
+	    return new ByteArrayInputStream(data);
+		
 	}
 }

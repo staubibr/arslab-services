@@ -22,23 +22,28 @@ public class Palette {
 		
 		// Type A: [rangeBegin;rangeEnd] R G B
 		Helper.ReadFile(pal, (String l) -> {			
-			if (l.isBlank()) return;
+			if (l == null || l.isEmpty()) return;
 			
 			if (!l.startsWith("[")) throw new RuntimeException("File format does not correspond to a type A palette.");
-			
-			String[] split = l.split(", | |,");
 
-			int r = Integer.parseInt(split[1]);
-			int g = Integer.parseInt(split[2]);
-			int b = Integer.parseInt(split[3]);
+			int s = l.indexOf("[");
+			int e = l.indexOf("]");
 			
-			String[] bucket = split[0].substring(1, split[0].length() - 1).split(";");
-			
+			String[] bucket = l.substring(s + 1, e).replaceAll(" ", "").split(";");
+						
 			float start = Float.parseFloat(bucket[0]);
 			float end = Float.parseFloat(bucket[1]);
 			
+			String[] rgb = l.substring(e + 1).split(" ");
+			
+			int r = Integer.parseInt(rgb[0]);
+			int g = Integer.parseInt(rgb[1]);
+			int b = Integer.parseInt(rgb[2]);
+			
 			layer.getBuckets().add(new Bucket(start, end, new int[] { r,g,b }));
 		});
+		
+		pal.close();
 		
 		return style;
 	}
@@ -55,8 +60,8 @@ public class Palette {
 		ArrayList<float[]> ranges = new ArrayList<float[]>();
 		ArrayList<int[]> colors = new ArrayList<int[]>();
 
-		Helper.ReadFile(pal, (String l) -> {			
-			if (l.isBlank()) return;
+		Helper.ReadFile(pal, (String l) -> {		
+			if (l == null || l.isEmpty()) return;
 
 			// check number of components per line
 			String[] split = l.split(",");		
@@ -70,6 +75,8 @@ public class Palette {
 				colors.add(new int[] { Integer.parseInt(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]) }); 
 			}
 		});
+		
+		pal.close();
 		
 		if (ranges.size() != colors.size()) throw new RuntimeException("Ranges and colors length must match in palette type B.");
 
@@ -87,12 +94,10 @@ public class Palette {
 		if (pal == null) return null;
 		
 		List<String> lines = Helper.ReadNLines(pal, 1);
+
+		pal.close();
 		
 		if (lines.size() < 1) return null;
-
-		// TODO: make the Palette parser into an implementation of IParser. This way, we can instantiate
-		// reset, then parse
-		pal.reset();
 		
 		if (lines.get(0).contains("VALIDSAVEDFILE")) return ParseTypeB(pal); 
 		

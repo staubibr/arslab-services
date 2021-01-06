@@ -65,18 +65,21 @@ public class Devs implements ILogParser {
 			messages.add(new Message(structure.getTimesteps().size() - 1, port, v));
 		});
 		
+		log.close();
+		
 		structure.setMessages(messages);
 	}
 
 	public Boolean Validate(FilesMap files) throws IOException {
-		InputStream ma = files.get(files.FindKey(".ma"));
-		InputStream log = files.get(files.FindKey(".log"));
+		InputStream ma = files.FindStream(".ma");
+		InputStream log = files.FindStream(".log");
 
 		if (ma == null || log == null) return false;
 
 		List<String> lines = Helper.ReadNLines(ma, 10);
-		
-		ma.reset();
+
+		ma.close();
+		log.close();
 		
 		long count = lines.stream().filter((String l) -> l.contains("type") && l.contains("cell"))
 									.count();

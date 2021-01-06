@@ -24,17 +24,9 @@ public class Helper {
 	public interface LineProcessor {
 	    public void process(String line);
 	}
-
-	public static byte[] ReadAsBytes(InputStream file) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		
-		file.transferTo(baos);
-
-		return baos.toByteArray();
-	}
 	
 	public static String ReadAllAsString (InputStream file) throws IOException {
-		Reader reader = new InputStreamReader(file);
+		Reader reader = new InputStreamReader(file, "UTF-8");
 		BufferedReader br = new BufferedReader(reader);
 		
 		List<String> lines = new ArrayList<String>();
@@ -46,7 +38,7 @@ public class Helper {
 	}
 	
 	public static void ReadFile(InputStream file, LineProcessor delegate) throws IOException {
-		Reader reader = new InputStreamReader(file);
+		Reader reader = new InputStreamReader(file, "UTF-8");
 		BufferedReader br = new BufferedReader(reader);
 
 		String line = null;
@@ -57,7 +49,7 @@ public class Helper {
 	}
 	
 	public static List<String> ReadNLines(InputStream file, int n) throws IOException {
-		Reader reader = new InputStreamReader(file);
+		Reader reader = new InputStreamReader(file, "UTF-8");
 		BufferedReader br = new BufferedReader(reader);
 		
 		List<String> lines = new ArrayList<String>();
@@ -91,6 +83,15 @@ public class Helper {
 		return output.toByteArray();
 	}
 
+	public static String StringBetween(String line, char a, char b) {
+		int i = line.indexOf(a);
+		int j = line.indexOf(b);
+		
+		if (i == -1 || j == -1) return null;
+		
+		return line.substring(i + 1, j);
+	}
+	
 	public static byte[] MakeZip(Structure structure) throws JsonProcessingException, IOException  {
 		return MakeZip(structure, null);
 	}

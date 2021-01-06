@@ -193,14 +193,16 @@ public class Structure implements Serializable {
 	
 		two.forEach(m -> {
 			String id = m.getId();
-	
-			// frame 1 has message id from frame 2, supercede value of 1 by value of 2
-			if (index.containsKey(id))  {
-				index.get(id).setValue(m.getValue());
-			}
-			
+
 			// frame 1 doesn't have message id from frame 2, add it
-			else index.put(m.getId(), m);
+			if (!index.containsKey(id)) {
+				one.add(m);
+				
+				index.put(id, m);
+			}
+
+			// supercede value of 1 by value of 2
+			index.get(id).setValue(m.getValue());
 		});
 				
 		return one;

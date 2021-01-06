@@ -40,6 +40,17 @@ public class AccountsController {
 		else return "Status : " + Integer.toString(x) + "\n Problem occured while creating account";
 	}
 	
+	@GetMapping(path="/DB/Models/{modelName}") 
+	public String getModel(@PathVariable String modelName, @RequestBody String data) throws IOException  
+	{
+		JSONObject json = new JSONObject(data);
+		
+		String color = json.getString("color");
+		int qty = json.getInt("quantity");
+		
+		return modelName + " has " + Integer.toString(qty) + " " + color + "potatoes.";
+	}
+	
 	@PutMapping(path="/Accounts/{username}/{oldPassword}")  
 	public String updateAccount(@PathVariable String username,@PathVariable String oldPassword,@RequestBody String accountProperties) throws IOException  
 	{

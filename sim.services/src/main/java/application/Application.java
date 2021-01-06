@@ -6,7 +6,7 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.ComponentScan;
  
 @SpringBootApplication
-@ComponentScan({"controllers", "sim.rise.ext.services"})
+@ComponentScan({"controllers"})
 public class Application  extends SpringBootServletInitializer {
  
     public static void main(String[] args) {

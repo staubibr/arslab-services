@@ -26,6 +26,8 @@ public class Auto implements IParser {
 		
 		if (parser == null) parser = TryParser(new parsers.cdpp.Devs(), files);
 		
+		if (parser == null) parser = TryParser(new parsers.cadmium.Irregular(), files);
+		
 		if (parser == null) parser = TryParser(new parsers.cadmium.CellDevs(), files);
 		
 		if (parser == null) parser = TryParser(new parsers.cadmium.Devs(), files);

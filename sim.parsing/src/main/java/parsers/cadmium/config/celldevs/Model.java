@@ -16,6 +16,8 @@ public class Model {
 	}
 	
 	public int[] getSize() {
+		if (shape == null) return null;
+		
 		int size[] = new int[3];
 
 		size[0] = shape.get(0);

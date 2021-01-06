@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-@JsonPropertyOrder({ "name", "type" })
+@JsonPropertyOrder({ "name", "type", "template" })
 public class Model implements Serializable, IEmitter {
 	private static final long serialVersionUID = 4L;
 
@@ -54,7 +54,8 @@ public class Model implements Serializable, IEmitter {
 	public void setName(String value) {
 		this.name = value;
 	}
-	
+
+    @JsonProperty("template")
     public String getTemplate() {
         return template;
     }
