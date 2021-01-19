@@ -1,5 +1,7 @@
 package controllers;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.core.io.InputStreamResource;
@@ -13,134 +15,106 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import components.CustomException;
-import components.FilesMap;
-import components.Helper;
 import components.Utilities;
-import models.simulation.Structure;
-import models.style.Style;
-import parsers.ILogParser;
-import parsers.IParser;
-import parsers.shared.Palette;
+import components.parsing.ISimulationParser;
+import components.parsing.IStyleParser;
+import components.simulation.Messages;
+import components.simulation.Structure;
+import components.style.Style;
+import components.utilities.Helper;
+import parsers.style.PaletteTypeAParser;
+import parsers.style.PaletteTypeBParser;
+import parsers.utilities.Auto;
 
 @CrossOrigin(origins="*")
 @RestController
 public class ParserController {
-    
-	@PostMapping(path="/parser/palette/typeA")
-	public ResponseEntity<InputStreamResource> parserPaletteTypeA(@RequestParam("pal") MultipartFile pal)
-	{    	     
-		try {   
-			Style style = (new Palette()).ParseTypeA(pal.getInputStream());
+	
+	private ResponseEntity<InputStreamResource> ParseStyle(IStyleParser parser, List<MultipartFile> multipartFiles) throws IOException {
+		HashMap<String, byte[]> files = Utilities.Convert(multipartFiles);
+		
+		var result = parser.ParseStyle(files);
+				
+		return Utilities.JsonFileResponse("style", result);
+	}
+
+	private ResponseEntity<byte[]> ParseSimulation(ISimulationParser parser, @RequestParam("files") List<MultipartFile> multipartFiles) throws IOException
+	{    	        
+		HashMap<String, byte[]> files = Utilities.Convert(multipartFiles);
 					
-			return Utilities.JsonFileResponse("style", style.getLayers());
-		} 
-		catch (Exception e) {
-		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
-		}
+		Structure structure = parser.ParseStructure(files);
+		
+		Messages messages = parser.ParseResults(structure, files);
+		
+		return Utilities.ByteArrayResponse(structure.getName(), Helper.MakeZip(structure, messages));
+	}
+	
+	@PostMapping(path="/parser/palette/typeA")
+	public ResponseEntity<InputStreamResource> parserPaletteTypeA(@RequestParam("files") List<MultipartFile> files) throws IOException
+	{    	    
+		return ParseStyle(new PaletteTypeAParser(), files);
 	}
 	
 	@PostMapping(path="/parser/palette/typeB")
-	public ResponseEntity<InputStreamResource> parserPaletteTypeB(@RequestParam("pal") MultipartFile pal)
-	{    
-		try {	        
-			Style style = (new Palette()).ParseTypeB(pal.getInputStream());
-			
-			return Utilities.JsonFileResponse("style", style.getLayers());
-		} 
-		catch (Exception e) {
-		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
-		}
+	public ResponseEntity<InputStreamResource> parserPaletteTypeB(@RequestParam("files") List<MultipartFile> files) throws IOException
+	{    	  
+		return ParseStyle(new PaletteTypeBParser(), files);
 	}
 	
-	@PostMapping(path="/parser/palette/auto")
-	public ResponseEntity<InputStreamResource> parserPaletteAuto(@RequestParam("files") List<MultipartFile> files)
-	{    	 
-		try {       
-			FilesMap map = Utilities.Convert(files);
-				
-			Style style = (new Palette()).Parse(map);
-			
-			return Utilities.JsonFileResponse("style", style.getLayers());
-		} 
-		catch (Exception e) {
-		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
-		}
-	}
-	  	
-	@PostMapping(path="/parser/auto")
-	public ResponseEntity<byte[]> parserAuto(@RequestParam("files") List<MultipartFile> files)
-	{
-		try {
-			FilesMap map = Utilities.Convert(files);
-			
-			// map.Mark(0);
-			
-			IParser parser = new parsers.auto.Auto();
-			Structure result = parser.Parse(map);
-			
-			// Parse palette if provided
-			Palette palParser = new parsers.shared.Palette();
-			
-			Style style = palParser.Parse(map);
-			
-			// map.Close();
-			
-			return Utilities.ByteArrayResponse(result.getName(), Helper.MakeZip(result, style));
-		} 
-		catch (Exception e) {
-		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
-		}
-	}
-	
-	@PostMapping(path="/parser/cdpp/celldevs")
-	public ResponseEntity<byte[]> parserCdppCellDevs(@RequestParam("files") List<MultipartFile> files)
-	{    	        
-		try {
-			FilesMap map = Utilities.Convert(files);
-			ILogParser parser = new parsers.cdpp.CellDevs();
-			Structure result = parser.Parse(map);
-			
-			// map.Close();
-		  			  	
-			return Utilities.ByteArrayResponse(result.getName(), Helper.MakeZip(result));
-		} 
-		catch (Exception e) {
-		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
-		}
-	}
-	   
 	@PostMapping(path="/parser/cdpp/devs")
-	public ResponseEntity<byte[]> parserCdppDevs(@RequestParam("files") List<MultipartFile> files)
-	{    	        
-		try {
-			FilesMap map = Utilities.Convert(files);
-			ILogParser parser = new parsers.cdpp.Devs();
-			Structure result = parser.Parse(map);
-				
-			// map.Close();
-		  			  	
-			return Utilities.ByteArrayResponse(result.getName(), Helper.MakeZip(result));
-		} 
-		catch (Exception e) {
-		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
-		}
+	public ResponseEntity<byte[]> parserCdppDevs(@RequestParam("files") List<MultipartFile> files) throws IOException
+	{ 
+		return this.ParseSimulation(new parsers.cdpp.devs.SimulationParser(), files);
 	}
-	   
+
+	@PostMapping(path="/parser/cdpp/celldevs")
+	public ResponseEntity<byte[]> parserCdppCellDevs(@RequestParam("files") List<MultipartFile> files) throws IOException
+	{
+		return this.ParseSimulation(new parsers.cdpp.celldevs.SimulationParser(), files);
+	}
+
 	@PostMapping(path="/parser/lopez/celldevs")
-	public ResponseEntity<byte[]> parserLopezCellDevs(@RequestParam("files") List<MultipartFile> files)
-	{    	        
-		try {
-			FilesMap map = Utilities.Convert(files);
-			ILogParser parser = new parsers.lopez.CellDevs();
-			Structure result = parser.Parse(map);
-		  				
-			// map.Close();
-			
-			return Utilities.ByteArrayResponse(result.getName(), Helper.MakeZip(result));
-		} 
-		catch (Exception e) {
-		  	throw new CustomException(HttpStatus.BAD_REQUEST, e.getMessage());
-		}
+	public ResponseEntity<byte[]> parserLopezCellDevs(@RequestParam("files") List<MultipartFile> files) throws IOException
+	{    	  
+		return this.ParseSimulation(new parsers.lopez.celldevs.SimulationParser(), files);
+	}
+
+	@PostMapping(path="/parser/cadmium/devs")
+	public ResponseEntity<byte[]> parserCadmiumDevs(@RequestParam("files") List<MultipartFile> files) throws IOException
+	{    	  
+		return this.ParseSimulation(new parsers.cadmium.devs.SimulationParser(), files);
+	}
+
+	@PostMapping(path="/parser/cadmium/celldevs")
+	public ResponseEntity<byte[]> parserCadmiumCellDevs(@RequestParam("files") List<MultipartFile> files) throws IOException
+	{    	  
+		return this.ParseSimulation(new parsers.cadmium.celldevs.SimulationParser(), files);
+	}
+
+	@PostMapping(path="/parser/cadmium/irregular")
+	public ResponseEntity<byte[]> parserCadmiumIrregular(@RequestParam("files") List<MultipartFile> files) throws IOException
+	{    	  
+		return this.ParseSimulation(new parsers.cadmium.irregular.SimulationParser(), files);
+	}
+
+	@PostMapping(path="/parser/auto")
+	public ResponseEntity<byte[]> parserAuto(@RequestParam("files") List<MultipartFile> mFiles) throws IOException
+	{
+		HashMap<String, byte[]> files = Utilities.Convert(mFiles);
+		 
+		ISimulationParser parser = Auto.DetectSimulationParser(files);
+
+		if (parser == null) throw new CustomException(HttpStatus.BAD_REQUEST, "Unable to automatically detect parser from files.");
+		
+		Structure structure = parser.ParseStructure(files);
+		
+		Messages messages = parser.ParseResults(structure, files);
+		
+		IStyleParser sParser = Auto.DetectStyleParser(files);
+		
+		Style style = (sParser == null) ? null : sParser.ParseStyle(files);
+
+		return Utilities.ByteArrayResponse(structure.getName(), Helper.MakeZip(structure, messages, style));
 	}
     
 	@ExceptionHandler(CustomException.class)

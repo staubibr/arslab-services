@@ -1,26 +1,17 @@
 package sim.application;
 
-import java.io.BufferedReader;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
+import java.util.HashMap;
 
-import components.FilesMap;
-import components.Helper;
-import models.simulation.Structure;
-import models.style.Style;
-import parsers.IParser;
-import parsers.shared.Palette;
+import components.parsing.ISimulationParser;
+import components.parsing.IStyleParser;
+import components.simulation.Messages;
+import components.simulation.Structure;
+import components.style.Style;
+import components.utilities.Helper;
+import parsers.utilities.Auto;
 
 public class Application {
 
@@ -49,29 +40,27 @@ public class Application {
 		try {
 			System.out.println("reading source files...");
 			
-			FilesMap map = GetFilesMap(source);
+			HashMap<String, byte[]> files = GetFilesMap(source);
 			
-			// map.Mark(0);
-			
-			IParser parser;
-			
-			parser = new parsers.auto.Auto();
+			ISimulationParser parser = Auto.DetectSimulationParser(files);
 
+			if (parser == null) throw new Exception("Unable to automatically detect parser from files.");
+						
 			System.out.println("converting source files to new specification...");
 			
-			Structure structure = parser.Parse(map);
+			Structure structure = parser.ParseStructure(files);
 			
-			Palette palParser = new parsers.shared.Palette();
+			Messages messages = parser.ParseResults(structure, files);
 
 			System.out.println("converting palette if provided...");
 			
-			Style style = palParser.Parse(map);
+			IStyleParser sParser = Auto.DetectStyleParser(files);
 			
-			// map.Close();
-
+			Style style = (sParser == null) ? null : sParser.ParseStyle(files);
+			
 			System.out.println("zipping everything...");
 			
-			byte[] zip = Helper.MakeZip(structure, style);
+			byte[] zip = Helper.MakeZip(structure, messages, style);
 			
 			String path = dest + "\\" + structure.getName() + ".zip";
 
@@ -103,8 +92,8 @@ public class Application {
 		return true;
 	}
 	
-	public static FilesMap GetFilesMap(final File folder) throws Exception {
-		FilesMap map = new FilesMap();
+	public static HashMap<String, byte[]> GetFilesMap(final File folder) throws Exception {
+		HashMap<String, byte[]> map = new HashMap<String, byte[]>();
 		
 		File[] files = folder.listFiles();
 		
@@ -117,7 +106,6 @@ public class Application {
 	        	        	        
 	        map.put(file.getName(), data);
 	    }
-
         
 	    return map;
 	}

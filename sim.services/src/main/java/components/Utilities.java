@@ -3,6 +3,7 @@ package components;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.core.io.InputStreamResource;
@@ -15,23 +16,24 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Utilities {
-	
-	public static FilesMap Convert(List<MultipartFile> files) throws IOException {
-		FilesMap map = new FilesMap();
+
+	public static HashMap<String, byte[]> Convert(List<MultipartFile> files) throws IOException {
+		HashMap<String, byte[]> map = new HashMap<String, byte[]>();
 		
 		// Stupid lambda requires a try catch block in the lambda function
 		for (int i = 0; i < files.size(); i++) {
 			InputStream ipt = files.get(i).getInputStream();
+			
 			map.put(files.get(i).getOriginalFilename(), ipt.readAllBytes());
 		}
 		
 		return map;
 	}
-
+	
 	public static ResponseEntity<byte[]> ByteArrayResponse(String filename, byte[] buffer) throws JsonProcessingException {			
 		return ResponseEntity.ok()
 	   	        .contentLength(buffer.length)
-	   	        .header("Content-Disposition", "attachment; filename=" + filename + ".zip")
+	   	        .header("Content-Disposition", "attachment; filename=\"" + filename + ".zip\"")
 	   	        .header("Access-Control-Allow-Headers", "Content-Disposition")
 	   	        .header("Access-Control-Expose-Headers", "Content-Disposition")
 	   	        .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -41,7 +43,7 @@ public class Utilities {
 	public static ResponseEntity<InputStreamResource> FileResponse(String filename, byte[] buffer) throws JsonProcessingException {	
 	   	return ResponseEntity.ok()
 	   	        .contentLength(buffer.length)
-	   	        .header("Content-Disposition", "attachment; filename=" + filename + ".json")
+	   	        .header("Content-Disposition", "attachment; filename=\"" + filename + ".json\"")
 	   	        .header("Access-Control-Allow-Headers", "Content-Disposition")
 	   	        .header("Access-Control-Expose-Headers", "Content-Disposition")
 	   	        .body(new InputStreamResource(new ByteArrayInputStream(buffer)));
@@ -54,12 +56,6 @@ public class Utilities {
 	   	
 	   	byte[] buf = mapper.writeValueAsBytes(object);
 	
-	   	return FileResponse(filename, buf);
-	}
-	
-	public static String GetFilename(MultipartFile file) {
-		int idx = file.getOriginalFilename().indexOf(".");
-		
-		return file.getOriginalFilename().substring(0, idx);
+	   	return Utilities.FileResponse(filename, buf);
 	}
 }
