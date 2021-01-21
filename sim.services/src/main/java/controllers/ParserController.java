@@ -33,7 +33,7 @@ public class ParserController {
 	private ResponseEntity<InputStreamResource> ParseStyle(IStyleParser parser, List<MultipartFile> multipartFiles) throws IOException {
 		HashMap<String, byte[]> files = Utilities.Convert(multipartFiles);
 		
-		var result = parser.ParseStyle(files);
+		Style result = parser.ParseStyle(files);
 				
 		return Utilities.JsonFileResponse("style", result);
 	}
